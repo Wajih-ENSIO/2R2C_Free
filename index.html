@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Planning travaux</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--ink:#1f2937;--mut:#6b7280;--line:#e5e7eb;--acc:#1d4ed8}
+*{box-sizing:border-box}body{margin:0;font:14px system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:14px 20px;background:var(--card);border-bottom:1px solid var(--line)}
+header input.t{font-size:18px;font-weight:700;border:0;border-bottom:2px solid transparent;background:none;min-width:260px}
+header input.t:hover,header input.t:focus{border-color:var(--line);outline:0}
+.sp{flex:1}button{font:inherit;padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer}
+button.p{background:var(--acc);color:#fff;border-color:var(--acc);font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:14px;padding:10px 20px;font-size:13px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.hint{padding:0 20px 8px;color:var(--mut);font-size:13px}
+.wrap{margin:0 20px 30px;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th,td{border-bottom:1px solid var(--line);padding:0;text-align:center}
+th{background:#f9fafb;font-size:12px;padding:6px 4px;position:sticky;top:0}
+td.site{position:sticky;left:0;background:#fff;text-align:left;padding:6px 10px;font-weight:600;min-width:170px;z-index:1;border-right:1px solid var(--line)}
+td.site .x{float:right;color:#cbd5e1;cursor:pointer;font-weight:400}td.site .x:hover{color:#dc2626}
+td.av{min-width:120px;padding:6px 8px}
+.bar{height:10px;background:#e5e7eb;border-radius:6px;overflow:hidden}.bar b{display:block;height:100%;background:#16a34a;transition:width .2s}
+.pct{font-size:11px;color:var(--mut)}
+select.st{appearance:none;-webkit-appearance:none;border:0;border-radius:12px;padding:4px 10px;font:600 12px system-ui;text-align:center;cursor:pointer;color:#fff}
+.s0{background:#9ca3af}.s1{background:#2563eb}.s2{background:#16a34a}.s3{background:#dc2626}
+td.cm{min-width:170px;text-align:left;padding:4px 8px}td.cm input{width:100%;border:0;background:none;font:inherit;color:var(--mut)}
+td.w{min-width:96px;vertical-align:top;cursor:pointer;border-left:1px solid var(--line);padding:3px}
+td.w:hover{background:#eff6ff}
+.cell{display:flex;flex-direction:column;align-items:flex-start;height:100%;min-height:26px;gap:3px;border-radius:4px}
+.cell span{font:600 11px/1.25 system-ui;padding:3px 9px;border-radius:999px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 2px rgba(0,0,0,.18)}.cell.empty{border:1px dashed #e5e7eb}
+#pop{position:fixed;display:none;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:10px;z-index:50;min-width:220px}
+#pop h4{margin:0 0 8px;font-size:13px}#pop label{display:flex;align-items:center;gap:8px;padding:6px 6px;border-radius:6px;cursor:pointer}
+#pop label:hover{background:#f3f4f6}#pop input{width:17px;height:17px}#pop i{width:12px;height:12px;border-radius:3px}
+#pop .r{padding:2px 0}#pop .sub{display:none;gap:6px;margin:0 0 4px 36px}#pop .lb{flex:1;min-width:0;border:1px solid var(--line);border-radius:6px;padding:4px 6px;font:inherit}#pop .q{width:56px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;font:inherit}#pop{min-width:290px}
+#pop .ok{margin-top:6px;width:100%}
+#ptitle,.pfoot{display:none}
+@media print{
+ @page{size:A4 landscape;margin:10mm}
+ body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ header,.hint,.noprint,td.cm,th.cm,td.site .x,#pop{display:none!important}
+ .wrap{margin:0;border:0;overflow:visible}td.site,th{position:static}
+ #ptitle{display:block;margin:0 0 6px}#ptitle h1{margin:0;font-size:20px}#ptitle p{margin:2px 0 0;color:var(--mut)}
+ .legend{padding:6px 0}.pfoot{display:block;color:var(--mut);font-size:11px;margin-top:6px}
+ td.w{cursor:default}.cell.empty{border:0}tr{break-inside:avoid}
+}
+</style></head><body>
+<header>
+ <input class="t" id="title" value="Planning travaux" aria-label="Titre">
+ <input class="t" id="client" value="" placeholder="Client / projet" style="font-size:15px;font-weight:500;min-width:200px">
+ <span class="sp"></span>
+ <button onclick="addSite()">+ Site</button>
+ <button onclick="addWeek()">+ Semaine</button>
+ <button class="p" onclick="window.print()">⬇ Télécharger le Gantt (PDF)</button>
+</header>
+<div class="hint noprint">Cliquez sur une case (site × semaine) : cochez les travaux, puis modifiez le texte affiché et la quantité (ex. TETRA x4). L'avancement théorique = travaux différents planifiés / 6 (« Autre » ne compte pas). Dans la fenêtre d'impression, choisissez « Enregistrer au format PDF ».</div>
+<div id="ptitle"><h1 id="pt"></h1><p id="pc"></p></div>
+<div class="legend" id="legend"></div>
+<div class="wrap"><table id="tbl"></table></div>
+<div class="pfoot" id="pf"></div>
+<div id="pop"></div>
+<script>
+const W=[["GC","Génie civil","#8d6e63","GC","#fff"],["TET","Pose des coffrets Tetradis","#f59e0b","TETRA","#1f2937"],["LOS","Mes Losange","#2563eb","Losange","#fff"],["TRX","Trx Enedis","#16a34a","Trx Enedis","#fff"],["MES","Mes Enedis","#84cc16","Mes Enedis","#1f2937"],["CAM","Pose des caméras","#a855f7","Caméras","#fff"],["AUT","Autre","#64748b","Autre","#fff"]];
+const NP=6; // "Autre" ne compte pas dans l'avancement
+const ST=["A planifier","En cours","Terminé","Bloqué"];
+const SITES=["AUTREY","BAZIEN","BULT","CLEZENTAINE","DEINVILLERS","DOMPTAIL","DONCIERES","FAUCONCOURT","HARDANCOURT","HOUSSERAS","JEANMENIL","MENARMONT","MENIL SUR BELVITTE","MOYEMONT","NOSSONCOURT","ORTONCOURT","ST BENOIT LA CHIPOTTE","ST GENEST","ST GORGON","ST MAURICE SUR MORTAGNE","STE BARBE","VOMECOURT","XAFEVILLERS"];
+let S={title:"Planning travaux",client:"",weeks:[43,44,45,46,47,48,49,50],sites:SITES.map(n=>({n,st:0,c:"",p:{}}))};
+try{const j=localStorage.getItem("planTrav");if(j)S=JSON.parse(j)}catch(e){}
+// migration : anciennes cases = nombres -> objets {k,t,q}
+S.sites.forEach(s=>Object.keys(s.p).forEach(w=>{s.p[w]=s.p[w].map(o=>typeof o==="number"?{k:o,t:"",q:""}:o)}));
+const save=()=>{try{localStorage.setItem("planTrav",JSON.stringify(S))}catch(e){}};
+const esc=x=>String(x==null?"":x).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
+const mon=w=>{const d=new Date(Date.UTC(2025,11,29+7*(w-1)));return d.getUTCDate()+"/"+String(d.getUTCMonth()+1).padStart(2,"0")};
+const prog=s=>{const u=new Set();Object.values(s.p).forEach(a=>a.forEach(o=>{if(o.k<NP)u.add(o.k)}));return Math.round(u.size/NP*100)};
+const lab=o=>(o.t||W[o.k][3])+(o.q?" x"+o.q:"");
+let cur=null;
+function render(){
+ title.value=S.title;client.value=S.client;
+ legend.innerHTML=W.map(w=>`<span><i style="background:${w[2]}"></i>${w[1]}</span>`).join("");
+ let h=`<tr><th style="text-align:left;padding-left:10px">Site</th><th>Avancement théorique</th><th>Statut</th><th class="cm">Commentaires</th>`+
+  S.weeks.map(w=>`<th>Sem ${w}<br><small style="font-weight:400">${mon(w)}</small></th>`).join("")+`</tr>`;
+ S.sites.forEach((s,i)=>{
+  const p=prog(s);
+  h+=`<tr><td class="site">${esc(s.n)}<span class="x noprint" onclick="delSite(${i})" title="Supprimer">✕</span></td>
+  <td class="av"><div class="bar"><b style="width:${p}%"></b></div><div class="pct">${p}%</div></td>
+  <td><select class="st s${s.st}" onchange="S.sites[${i}].st=+this.value;save();render()">${ST.map((x,k)=>`<option value="${k}" ${k==s.st?"selected":""}>${x}</option>`).join("")}</select></td>
+  <td class="cm"><input value="${esc(s.c)}" onchange="S.sites[${i}].c=this.value;save()" placeholder="…"></td>`+
+  S.weeks.map(w=>{const a=s.p[w]||[];
+   return `<td class="w" onclick="openPop(event,${i},${w})"><div class="cell ${a.length?"":"empty"}">${a.map(o=>`<span style="background:${W[o.k][2]};color:${W[o.k][4]}">${esc(lab(o))}</span>`).join("")}</div></td>`}).join("")+`</tr>`;
+ });
+ tbl.innerHTML=h;pt.textContent=S.title;pc.textContent=S.client;
+ pf.textContent="Planning prévisionnel — édité le "+new Date().toLocaleDateString("fr-FR");
+}
+function buildPop(){
+ const s=S.sites[cur.i],a=s.p[cur.w]||[];
+ pop.innerHTML=`<h4>${esc(s.n)} — Sem ${cur.w}</h4>`+W.map((x,k)=>{const o=a.find(o=>o.k===k);
+  return `<div class="r"><label><input type="checkbox" data-k="${k}" ${o?"checked":""}><i style="background:${x[2]}"></i>${x[1]}</label>
+  <div class="sub" style="display:${o?"flex":"none"}"><input class="lb" data-k="${k}" value="${esc(o?o.t:"")}" placeholder="${x[3]}" title="Texte affiché (modifiable)"><input class="q" type="number" min="1" data-k="${k}" value="${esc(o?o.q:"")}" placeholder="x" title="Quantité (ex. 4 → x4)"></div></div>`}).join("")+`<button class="ok p" onclick="closePop()">OK</button>`;
+}
+function openPop(e,i,w){
+ cur={i,w};buildPop();pop.style.display="block";
+ const r=e.currentTarget.getBoundingClientRect(),pw=pop.offsetWidth,ph=pop.offsetHeight;
+ pop.style.left=Math.max(8,Math.min(r.left,innerWidth-pw-8))+"px";
+ pop.style.top=(r.bottom+ph+8>innerHeight?Math.max(8,r.top-ph-4):r.bottom+4)+"px";
+ e.stopPropagation();
+}
+function closePop(){pop.style.display="none";cur=null}
+pop.addEventListener("change",e=>{
+ const t=e.target;if(t.type!=="checkbox")return;
+ const s=S.sites[cur.i],k=+t.dataset.k;let a=s.p[cur.w]||[];
+ if(t.checked){if(!a.some(o=>o.k===k))a.push({k,t:"",q:""});a.sort((x,y)=>x.k-y.k);s.p[cur.w]=a}
+ else{a=a.filter(o=>o.k!==k);if(a.length)s.p[cur.w]=a;else delete s.p[cur.w]}
+ t.closest(".r").querySelector(".sub").style.display=t.checked?"flex":"none";
+ if(t.checked){const f=t.closest(".r").querySelector(".q");if(k===1)f.focus()}
+ if(s.st==0&&prog(s)>0)s.st=1;
+ save();render();
+});
+pop.addEventListener("input",e=>{
+ const t=e.target;if(!t.dataset.k||t.type==="checkbox")return;
+ const o=(S.sites[cur.i].p[cur.w]||[]).find(o=>o.k===+t.dataset.k);if(!o)return;
+ if(t.classList.contains("lb"))o.t=t.value;else o.q=t.value;
+ save();render();
+});
+document.addEventListener("click",e=>{if(cur&&!pop.contains(e.target))closePop()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"||(e.key==="Enter"&&cur&&e.target.tagName==="INPUT"))closePop()});
+title.oninput=()=>{S.title=title.value;pt.textContent=S.title;save()};
+client.oninput=()=>{S.client=client.value;pc.textContent=S.client;save()};
+function addSite(){const n=prompt("Nom du site ?");if(n){S.sites.push({n:n.toUpperCase(),st:0,c:"",p:{}});save();render()}}
+function delSite(i){if(confirm("Supprimer "+S.sites[i].n+" ?")){S.sites.splice(i,1);save();render()}}
+function addWeek(){const m=Math.max(...S.weeks);if(m<52){S.weeks.push(m+1);save();render()}}
+render();
+</script></body></html>
