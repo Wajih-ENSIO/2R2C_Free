@@ -24,10 +24,10 @@ td.av{min-width:120px;padding:6px 8px}
 select.st{appearance:none;-webkit-appearance:none;border:0;border-radius:12px;padding:4px 10px;font:600 12px system-ui;text-align:center;cursor:pointer;color:#fff}
 .s0{background:#9ca3af}.s1{background:#2563eb}.s2{background:#16a34a}.s3{background:#dc2626}
 td.cm{min-width:170px;text-align:left;padding:4px 8px}td.cm input{width:100%;border:0;background:none;font:inherit;color:var(--mut)}
-td.w{min-width:96px;vertical-align:top;cursor:pointer;border-left:1px solid var(--line);padding:3px}
+td.w{min-width:120px;vertical-align:top;cursor:pointer;border-left:1px solid var(--line);padding:3px}
 td.w:hover{background:#eff6ff}
 .cell{display:flex;flex-direction:column;align-items:flex-start;height:100%;min-height:26px;gap:3px;border-radius:4px}
-.cell span{font:600 11px/1.25 system-ui;padding:3px 9px;border-radius:999px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 2px rgba(0,0,0,.18)}.cell.empty{border:1px dashed #e5e7eb}
+.cell span{font:600 11px/1.25 system-ui;padding:3px 9px;border-radius:14px;text-align:left;white-space:normal;box-shadow:0 1px 2px rgba(0,0,0,.18)}.cell.empty{border:1px dashed #e5e7eb}
 #pop{position:fixed;display:none;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:10px;z-index:50;min-width:220px}
 #pop h4{margin:0 0 8px;font-size:13px}#pop label{display:flex;align-items:center;gap:8px;padding:6px 6px;border-radius:6px;cursor:pointer}
 #pop label:hover{background:#f3f4f6}#pop input{width:17px;height:17px}#pop i{width:12px;height:12px;border-radius:3px}
@@ -88,13 +88,13 @@ document.getElementById("imp").onchange=e=>{const f=e.target.files[0];if(!f)retu
 const esc=x=>String(x==null?"":x).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
 const mon=w=>{const d=new Date(Date.UTC(2025,11,29+7*(w-1)));return d.getUTCDate()+"/"+String(d.getUTCMonth()+1).padStart(2,"0")};
 const prog=s=>{const u=new Set();Object.values(s.p).forEach(a=>a.forEach(o=>{if(o.k<NP)u.add(o.k)}));return Math.round(u.size/NP*100)};
-const lab=o=>(o.t||W[o.k][3])+(o.q?" x"+o.q:"");
+const lab=o=>(o.t||W[o.k][1])+(o.q?" x"+o.q:"");
 let cur=null;
 function render(){
  title.value=S.title;client.value=S.client;
  legend.innerHTML=W.map(w=>`<span><i style="background:${w[2]}"></i>${w[1]}</span>`).join("");
  let h=`<tr><th style="text-align:left;padding-left:10px">Site</th><th>Avancement théorique</th><th>Statut</th><th class="cm">Commentaires</th>`+
-  S.weeks.map(w=>`<th>Sem ${w}<br><small style="font-weight:400">${mon(w)}</small></th>`).join("")+`</tr>`;
+  S.weeks.map(w=>`<th>Sem ${w}</th>`).join("")+`</tr>`;
  S.sites.forEach((s,i)=>{
   const p=prog(s);
   h+=`<tr><td class="site">${esc(s.n)}<span class="x noprint" onclick="delSite(${i})" title="Supprimer">✕</span></td>
@@ -111,7 +111,7 @@ function buildPop(){
  const s=S.sites[cur.i],a=s.p[cur.w]||[];
  pop.innerHTML=`<h4>${esc(s.n)} — Sem ${cur.w}</h4>`+W.map((x,k)=>{const o=a.find(o=>o.k===k);
   return `<div class="r"><label><input type="checkbox" data-k="${k}" ${o?"checked":""}><i style="background:${x[2]}"></i>${x[1]}</label>
-  <div class="sub" style="display:${o?"flex":"none"}"><input class="lb" data-k="${k}" value="${esc(o?o.t:"")}" placeholder="${x[3]}" title="Texte affiché (modifiable)"><input class="q" type="number" min="1" data-k="${k}" value="${esc(o?o.q:"")}" placeholder="x" title="Quantité (ex. 4 → x4)"></div></div>`}).join("")+`<button class="ok p" onclick="closePop()">OK</button>`;
+  <div class="sub" style="display:${o?"flex":"none"}"><input class="lb" data-k="${k}" value="${esc(o?o.t:"")}" placeholder="${x[1]}" title="Texte affiché (modifiable)"><input class="q" type="number" min="1" data-k="${k}" value="${esc(o?o.q:"")}" placeholder="x" title="Quantité (ex. 4 → x4)"></div></div>`}).join("")+`<button class="ok p" onclick="closePop()">OK</button>`;
 }
 function openPop(e,i,w){
  cur={i,w};buildPop();pop.style.display="block";
