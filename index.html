@@ -48,6 +48,9 @@ td.w:hover{background:#eff6ff}
  <input class="t" id="title" value="Planning travaux" aria-label="Titre">
  <input class="t" id="client" value="" placeholder="Client / projet" style="font-size:15px;font-weight:500;min-width:200px">
  <span class="sp"></span>
+ <span id="sync" class="noprint" style="font-size:12px;color:#6b7280">Connexion…</span>
+ <button onclick="exportJson()" title="Télécharger une copie de sauvegarde">Exporter</button>
+ <button onclick="document.getElementById('imp').click()" title="Restaurer une sauvegarde">Importer</button><input type="file" id="imp" accept=".json" hidden>
  <button onclick="addSite()">+ Site</button>
  <button onclick="addWeek()">+ Semaine</button>
  <button class="p" onclick="window.print()">⬇ Télécharger le Gantt (PDF)</button>
@@ -65,9 +68,23 @@ const ST=["A planifier","En cours","Terminé","Bloqué"];
 const SITES=["AUTREY","BAZIEN","BULT","CLEZENTAINE","DEINVILLERS","DOMPTAIL","DONCIERES","FAUCONCOURT","HARDANCOURT","HOUSSERAS","JEANMENIL","MENARMONT","MENIL SUR BELVITTE","MOYEMONT","NOSSONCOURT","ORTONCOURT","ST BENOIT LA CHIPOTTE","ST GENEST","ST GORGON","ST MAURICE SUR MORTAGNE","STE BARBE","VOMECOURT","XAFEVILLERS"];
 let S={title:"Planning travaux",client:"",weeks:[43,44,45,46,47,48,49,50],sites:SITES.map(n=>({n,st:0,c:"",p:{}}))};
 try{const j=localStorage.getItem("planTrav");if(j)S=JSON.parse(j)}catch(e){}
-// migration : anciennes cases = nombres -> objets {k,t,q}
-S.sites.forEach(s=>Object.keys(s.p).forEach(w=>{s.p[w]=s.p[w].map(o=>typeof o==="number"?{k:o,t:"",q:""}:o)}));
-const save=()=>{try{localStorage.setItem("planTrav",JSON.stringify(S))}catch(e){}};
+function norm(){S.sites.forEach(s=>Object.keys(s.p).forEach(w=>{s.p[w]=s.p[w].map(o=>typeof o==="number"?{k:o,t:"",q:""}:o)}))}
+norm();
+let saveT=null,pendingRemote=null;
+function setSync(t,c){const e=document.getElementById("sync");e.textContent=t;e.style.color=c}
+function save(){
+ try{localStorage.setItem("planTrav",JSON.stringify(S))}catch(e){}
+ if(window.cloud){setSync("Enregistrement…","#b45309");clearTimeout(saveT);saveT=setTimeout(()=>window.cloud.push(JSON.stringify(S)),400)}
+}
+function applyRemote(str){try{S=JSON.parse(str);norm();try{localStorage.setItem("planTrav",str)}catch(e){}render()}catch(e){}}
+window.onRemote=str=>{
+ const a=document.activeElement;
+ if(cur||(a&&a.matches&&a.matches("input,select,textarea"))){pendingRemote=str;return}
+ applyRemote(str)};
+function flushRemote(){const a=document.activeElement;if(pendingRemote&&!cur&&!(a&&a.matches&&a.matches("input,select,textarea"))){const p=pendingRemote;pendingRemote=null;applyRemote(p)}}
+document.addEventListener("focusout",()=>setTimeout(flushRemote,50));
+function exportJson(){const b=new Blob([JSON.stringify(S,null,1)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="planning-travaux-"+new Date().toISOString().slice(0,10)+".json";a.click()}
+document.getElementById("imp").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const n=JSON.parse(r.result);if(!n.sites||!n.weeks)throw 0;if(confirm("Remplacer le planning actuel par ce fichier ?")){S=n;norm();save();render()}}catch(x){alert("Fichier invalide")}e.target.value=""};r.readAsText(f)};
 const esc=x=>String(x==null?"":x).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
 const mon=w=>{const d=new Date(Date.UTC(2025,11,29+7*(w-1)));return d.getUTCDate()+"/"+String(d.getUTCMonth()+1).padStart(2,"0")};
 const prog=s=>{const u=new Set();Object.values(s.p).forEach(a=>a.forEach(o=>{if(o.k<NP)u.add(o.k)}));return Math.round(u.size/NP*100)};
@@ -103,7 +120,7 @@ function openPop(e,i,w){
  pop.style.top=(r.bottom+ph+8>innerHeight?Math.max(8,r.top-ph-4):r.bottom+4)+"px";
  e.stopPropagation();
 }
-function closePop(){pop.style.display="none";cur=null}
+function closePop(){pop.style.display="none";cur=null;setTimeout(flushRemote,50)}
 pop.addEventListener("change",e=>{
  const t=e.target;if(t.type!=="checkbox")return;
  const s=S.sites[cur.i],k=+t.dataset.k;let a=s.p[cur.w]||[];
@@ -128,4 +145,18 @@ function addSite(){const n=prompt("Nom du site ?");if(n){S.sites.push({n:n.toUpp
 function delSite(i){if(confirm("Supprimer "+S.sites[i].n+" ?")){S.sites.splice(i,1);save();render()}}
 function addWeek(){const m=Math.max(...S.weeks);if(m<52){S.weeks.push(m+1);save();render()}}
 render();
-</script></body></html>
+</script>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {getFirestore,doc,onSnapshot,setDoc} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+const app=initializeApp({apiKey:"AIzaSyDhb1JSLqfwdN4fddHpTS6opzV3fL9Zi3g",authDomain:"planning-free.firebaseapp.com",projectId:"planning-free",storageBucket:"planning-free.firebasestorage.app",messagingSenderId:"57310213062",appId:"1:57310213062:web:e35eab961ce631d699b8c7"});
+const ref=doc(getFirestore(app),"plannings","main");
+const err=e=>setSync(e&&e.code==="permission-denied"?"Accès refusé (règles Firestore)":"Hors ligne — non synchronisé","#dc2626");
+window.cloud={push:async str=>{try{await setDoc(ref,{data:str,updated:Date.now()});setSync("● Synchronisé","#16a34a")}catch(e){err(e)}}};
+onSnapshot(ref,snap=>{
+ if(snap.metadata.hasPendingWrites)return;
+ if(!snap.exists()){if(snap.metadata.fromCache)return;window.cloud.push(JSON.stringify(S));return}
+ window.onRemote(snap.data().data);setSync("● Synchronisé","#16a34a");
+},err);
+</script>
+</body></html>
